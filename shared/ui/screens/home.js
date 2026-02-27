@@ -6,6 +6,7 @@ export function createHomeScreen({ root, state, services }) {
   const left = el('div', { className: 'pane pane-left' });
   const right = el('div', { className: 'pane pane-right' });
   const overlay = el('div', { className: 'player-overlay hidden' });
+
   root.innerHTML = '';
   root.append(tabsNode, el('div', { className: 'panes' }, [left, right]), overlay);
 
@@ -19,10 +20,12 @@ export function createHomeScreen({ root, state, services }) {
 
   async function loadTab(tab) {
     ui.isTabLoading = true;
+
     state.activeTab = tab;
     ui.leftIndex = 0;
     ui.rightIndex = 0;
     ui.focusList = 'left';
+
     renderTabs(tabsNode, TABS, tab);
 
     try {
@@ -60,25 +63,31 @@ export function createHomeScreen({ root, state, services }) {
 
   function renderLive() {
     renderList(left, state.liveCategories || [], ui.leftIndex, (c) => c.category_name);
+
     const filtered = (state.liveStreams || [])
       .filter((s) => !currentCategoryId() || s.category_id === currentCategoryId())
-      .filter((s) => s.name?.toLowerCase().includes(ui.query.toLowerCase()));
+      .filter((s) => (s.name || '').toLowerCase().includes((ui.query || '').toLowerCase()));
+
     state.currentRightItems = filtered;
     renderList(right, filtered, ui.rightIndex, (s) => s.name);
   }
 
   function renderVod() {
     renderList(left, state.vodCategories || [], ui.leftIndex, (c) => c.category_name);
+
     const cat = (state.vodCategories || [])[ui.leftIndex]?.category_id;
     const filtered = (state.vodStreams || []).filter((s) => !cat || s.category_id === cat);
+
     state.currentRightItems = filtered;
     renderList(right, filtered, ui.rightIndex, (s) => s.name);
   }
 
   function renderSeries() {
     renderList(left, state.seriesCategories || [], ui.leftIndex, (c) => c.category_name);
+
     const cat = (state.seriesCategories || [])[ui.leftIndex]?.category_id;
     const filtered = (state.series || []).filter((s) => !cat || s.category_id === cat);
+
     state.currentRightItems = filtered;
     renderList(right, filtered, ui.rightIndex, (s) => s.name);
   }
@@ -86,22 +95,31 @@ export function createHomeScreen({ root, state, services }) {
   function renderEpg() {
     const channels = state.liveStreams || [];
     renderList(left, channels, ui.leftIndex, (c) => c.name);
+
     const channel = channels[ui.leftIndex];
     const day = channel ? services.epg.day(channel) : [];
+
     state.currentRightItems = day;
-    renderList(right, day, ui.rightIndex, (p) => `${p.startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${p.title}`);
+    renderList(
+      right,
+      day,
+      ui.rightIndex,
+      (p) => `${p.startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${p.title}`,
+    );
   }
 
   function renderFavorites() {
     const favs = services.storage.getFavorites();
     state.currentRightItems = favs;
+
     left.innerHTML = '<h3>Itens favoritos</h3>';
-    renderList(right, favs, ui.rightIndex, (f) => `${f.type.toUpperCase()} · ${f.name}`);
+    renderList(right, favs, ui.rightIndex, (f) => `${(f.type || '').toUpperCase()} · ${f.name}`);
   }
 
   function renderRecents() {
     const recents = services.storage.getRecents();
     state.currentRightItems = recents;
+
     left.innerHTML = '<h3>Assistidos recentemente</h3>';
     renderList(right, recents, ui.rightIndex, (f) => `${new Date(f.watchedAt).toLocaleString()} · ${f.name}`);
   }
@@ -109,7 +127,9 @@ export function createHomeScreen({ root, state, services }) {
   function renderConfig() {
     left.innerHTML = '';
     right.innerHTML = '';
+
     const settings = services.storage.getSettings();
+
     const prefBtn = el('button', { className: 'tv-button' }, `Stream: ${settings.streamPreference}`);
     prefBtn.onclick = () => {
       const next = settings.streamPreference === 'hls-first' ? 'ts-first' : 'hls-first';
@@ -117,18 +137,27 @@ export function createHomeScreen({ root, state, services }) {
       showToast(`Preferência alterada para ${next}`);
       loadTab('Config');
     };
-    const baseInput = el('input', { className: 'tv-input', value: settings.advancedBaseUrl || '', placeholder: 'Base URL avançada (oculta)' });
+
+    const baseInput = el('input', {
+      className: 'tv-input',
+      value: settings.advancedBaseUrl || '',
+      placeholder: 'Base URL avançada (oculta)',
+    });
+
     const saveBase = el('button', { className: 'tv-button' }, 'Salvar URL avançada');
     saveBase.onclick = () => {
-      services.storage.setSettings({ advancedBaseUrl: baseInput.value.trim() });
+      services.storage.setSettings({ advancedBaseUrl: (baseInput.value || '').trim() });
       showToast('URL avançada salva');
     };
+
     const clearCache = el('button', { className: 'tv-button' }, 'Limpar cache');
     clearCache.onclick = () => {
       services.storage.clearCache();
       showToast('Cache limpo');
     };
+
     const account = services.session.accountInfo || {};
+
     right.append(
       el('div', { className: 'card' }, [
         prefBtn,
@@ -144,6 +173,7 @@ export function createHomeScreen({ root, state, services }) {
   async function openCurrent() {
     const item = state.currentRightItems?.[ui.rightIndex];
     if (!item) return;
+
     if (state.activeTab === 'Live') {
       const candidates = services.client.buildStreamCandidates('live', item.stream_id);
       services.play(item, candidates, { isLive: true });
@@ -154,6 +184,7 @@ export function createHomeScreen({ root, state, services }) {
       const info = await services.client.fetchSeriesInfo(item.series_id);
       const episodes = Object.values(info.episodes || {}).flat();
       if (!episodes.length) return showToast('Sem episódios');
+
       const episode = episodes[0];
       const candidates = services.client.buildStreamCandidates('series', episode.id, episode.container_extension || 'mp4');
       services.play({ ...episode, name: `${item.name} - ${episode.title}` }, candidates, { isLive: false });
@@ -171,31 +202,62 @@ export function createHomeScreen({ root, state, services }) {
   }
 
   function onKey(key) {
-    if (TABS.includes(key)) return loadTab(key);
+    // Troca de aba
+    if (TABS.includes(key)) {
+      // evita “efeito colateral” enquanto ainda está carregando dados da aba anterior
+      if (!ui.isTabLoading) loadTab(key);
+      return;
+    }
+
     if (key === 'ArrowLeft') ui.focusList = 'left';
     if (key === 'ArrowRight') ui.focusList = 'right';
+
     if (key === 'ArrowUp') {
       if (ui.focusList === 'left') ui.leftIndex = Math.max(0, ui.leftIndex - 1);
       else ui.rightIndex = Math.max(0, ui.rightIndex - 1);
     }
+
     if (key === 'ArrowDown') {
       if (ui.focusList === 'left') ui.leftIndex += 1;
       else ui.rightIndex += 1;
     }
-    if (key === 'Enter' && ui.focusList === 'right' && !ui.isTabLoading) openCurrent();
+
+    // IMPORTANTE: Enter só abre item quando o foco está na lista da direita
+    // (isso evita “voltar pro último canal” quando você só está mudando de aba/menus)
+    if (key === 'Enter' && ui.focusList === 'right' && !ui.isTabLoading) {
+      openCurrent();
+      return;
+    }
+
     if (key === 'Search') {
       ui.query = prompt('Buscar canal:') || '';
     }
+
     if (key === 'Favorite') {
       const item = state.currentRightItems?.[ui.rightIndex];
       if (item) {
-        services.storage.toggleFavorite({ id: item.stream_id || item.id || item.series_id, type: state.activeTab.toLowerCase(), name: item.name || item.title });
+        services.storage.toggleFavorite({
+          id: item.stream_id || item.id || item.series_id,
+          type: (state.activeTab || '').toLowerCase(),
+          name: item.name || item.title,
+        });
         showToast('Favorito atualizado');
       }
     }
+
     rerender();
   }
 
   loadTab('Live');
-  return { onKey, showOverlay(content) { overlay.textContent = content; overlay.classList.remove('hidden'); }, hideOverlay() { overlay.classList.add('hidden'); } };
+
+  return {
+    onKey,
+    showOverlay(content) {
+      overlay.textContent = content;
+      overlay.classList.remove('hidden');
+    },
+    hideOverlay() {
+      overlay.classList.add('hidden');
+    },
+  };
 }
