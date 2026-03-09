@@ -1,9 +1,9 @@
 {
-  "id": "com.supertv.iptv",
-  "title": "SuperTV IPTV",
+  "id": "com.etv.iptv",
+  "title": "ETV IPTV",
   "version": "1.0.0",
   "type": "web",
   "main": "index.html",
   "requiredMemory": 64,
-  "vendor": "SuperTV"
+  "vendor": "ETV"
 }

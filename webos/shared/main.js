@@ -5,19 +5,19 @@ function resolvePlatform() {
 
   let adapter = null;
 
-  if (typeof window.__tizenPlatformFactory === 'function') {
+  if (typeof window.createPlatformWebOS === 'function') {
     try {
-      adapter = window.__tizenPlatformFactory();
+      adapter = window.createPlatformWebOS();
     } catch (err) {
-      console.error('[BOOT] falha ao criar adapter Tizen via __tizenPlatformFactory:', err);
+      console.error('[BOOT] falha ao criar adapter webOS via createPlatformWebOS:', err);
     }
   }
 
-  if (!adapter && typeof window.createPlatformTizen === 'function') {
+  if (!adapter && typeof window.__webosPlatformFactory === 'function') {
     try {
-      adapter = window.createPlatformTizen();
+      adapter = window.__webosPlatformFactory();
     } catch (err) {
-      console.error('[BOOT] falha ao criar adapter Tizen via createPlatformTizen:', err);
+      console.error('[BOOT] falha ao criar adapter webOS via __webosPlatformFactory:', err);
     }
   }
 
