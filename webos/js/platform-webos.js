@@ -16,6 +16,8 @@
   const video = document.getElementById('video');
   let hls = null;
   let callbacks = {};
+  let lastCandidates = [];
+  let selectedCandidateIndex = 0;
 
   const state = {
     candidates: [],
@@ -175,6 +177,8 @@
 
   async function play(candidates, metaOrOpts = {}) {
     state.candidates = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+    lastCandidates = state.candidates.slice();
+    selectedCandidateIndex = 0;
     state.opts = metaOrOpts || {};
     state.item = state.opts.item || null;
     state.isLive = !!state.opts.isLive;
@@ -239,6 +243,18 @@
     callbacks = cb;
   }
 
+  function back(fallback) {
+    stop();
+    if (typeof fallback === 'function') fallback();
+  }
+
+  function channel(step) {
+    if (!lastCandidates.length) return;
+    selectedCandidateIndex = (selectedCandidateIndex + (step > 0 ? 1 : -1) + lastCandidates.length) % lastCandidates.length;
+    const selected = lastCandidates[selectedCandidateIndex];
+    play([selected], state.opts);
+  }
+
   video.addEventListener('playing', () => {
     if (!state.playbackStarted) {
       state.playbackStarted = true;
@@ -282,6 +298,8 @@
     seekBy,
     togglePause,
     setCallbacks,
+    back,
+    channel,
   };
 
   window.createPlatformWebOS = function createPlatformWebOS() {
