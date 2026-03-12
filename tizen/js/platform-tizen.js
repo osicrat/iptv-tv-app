@@ -298,7 +298,7 @@
 
       resetTry(list);
 
-      if (hasAvplay() && !isDirectStream) {
+      if (hasAvplay()) {
         if (!tryList.length) return;
         openAndPlay(tryList[0]);
         return;
@@ -406,7 +406,6 @@
 
   log('platform-tizen loaded (non-module)');
 })();
-
 
 
 
