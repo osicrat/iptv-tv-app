@@ -1,0 +1,58 @@
+/* WEBOS_BACKFIX_SIDELOAD */
+(function () {
+  function hasVideoSource() {
+    var v = document.getElementById('video');
+    try {
+      return !!(v && (v.currentSrc || v.getAttribute('src') || v.src));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function inPlayerMode() {
+    var app = document.getElementById('app');
+    try {
+      return !!((app && app.classList && app.classList.contains('player-mode')) || hasVideoSource());
+    } catch (e) {
+      return hasVideoSource();
+    }
+  }
+
+  function fireEscape() {
+    var ev;
+    try {
+      ev = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        code: 'Escape',
+        keyCode: 27,
+        which: 27,
+        bubbles: true,
+        cancelable: true
+      });
+    } catch (e) {
+      ev = document.createEvent('Event');
+      ev.initEvent('keydown', true, true);
+      ev.keyCode = 27;
+      ev.which = 27;
+    }
+    document.dispatchEvent(ev);
+    window.dispatchEvent(ev);
+  }
+
+  function onBack(ev) {
+    var code = ev ? (ev.keyCode || ev.which) : 0;
+    var key = ev && ev.key ? String(ev.key) : '';
+    if (!(code === 461 || code === 10009 || code === 27 || key === 'Back' || key === 'GoBack')) return;
+    if (!inPlayerMode()) return;
+    if (ev && ev.preventDefault) ev.preventDefault();
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    if (ev && ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    fireEscape();
+    return false;
+  }
+
+  document.addEventListener('keydown', onBack, true);
+  window.addEventListener('keydown', onBack, true);
+  document.addEventListener('backbutton', onBack, true);
+  window.addEventListener('backbutton', onBack, true);
+})();

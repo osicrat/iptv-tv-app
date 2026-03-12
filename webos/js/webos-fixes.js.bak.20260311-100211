@@ -1,0 +1,192 @@
+﻿(function () {
+  if (window.__ETV_WEBOS_SEARCH_FIX_V1__) return;
+  window.__ETV_WEBOS_SEARCH_FIX_V1__ = true;
+
+  var SEARCH_RX = /(pesquis|search|buscar)/i;
+  var keyboardVisible = false;
+
+  function s(v) {
+    return v == null ? '' : String(v);
+  }
+
+  function isVisible(el) {
+    if (!el) return false;
+    var st = window.getComputedStyle(el);
+    if (!st) return false;
+    if (st.display === 'none' || st.visibility === 'hidden') return false;
+    if (parseFloat(st.opacity || '1') === 0) return false;
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }
+
+  function meta(el) {
+    if (!el) return '';
+    var out = [];
+    out.push(el.id || '');
+    out.push(el.className || '');
+    out.push(s(el.getAttribute && el.getAttribute('name')));
+    out.push(s(el.getAttribute && el.getAttribute('placeholder')));
+    out.push(s(el.getAttribute && el.getAttribute('aria-label')));
+    out.push(s(el.getAttribute && el.getAttribute('title')));
+    out.push(s(el.getAttribute && el.getAttribute('role')));
+    try {
+      if (el.textContent && el.textContent.length < 120) out.push(el.textContent);
+    } catch (e) {}
+    return out.join(' ');
+  }
+
+  function isTextInput(el) {
+    if (!el || !el.tagName) return false;
+    var tag = el.tagName.toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
+    if (el.disabled || el.readOnly) return false;
+    if (tag === 'INPUT') {
+      var type = s(el.type).toLowerCase();
+      if (type === 'hidden' || type === 'checkbox' || type === 'radio' || type === 'button' || type === 'submit') {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function normalizeInput(el) {
+    if (!isTextInput(el)) return;
+
+    try {
+      if (!el.hasAttribute('tabindex') || parseInt(el.getAttribute('tabindex'), 10) < 0) {
+        el.setAttribute('tabindex', '0');
+      }
+    } catch (e) {}
+
+    try {
+      var t = s(el.type).toLowerCase();
+      if ((t === '' || t === 'text') && SEARCH_RX.test(meta(el))) {
+        el.type = 'search';
+      }
+    } catch (e2) {}
+
+    try { el.style.pointerEvents = 'auto'; } catch (e3) {}
+  }
+
+  function looksSearchInput(el) {
+    if (!isTextInput(el)) return false;
+    if (s(el.type).toLowerCase() === 'search') return true;
+    return SEARCH_RX.test(meta(el));
+  }
+
+  function findSearchInput() {
+    var nodes = document.querySelectorAll('input, textarea');
+    var best = null;
+    var bestScore = -1;
+
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (!isVisible(el) || !isTextInput(el)) continue;
+
+      normalizeInput(el);
+
+      var score = 0;
+      var m = meta(el);
+      var r = el.getBoundingClientRect();
+
+      if (looksSearchInput(el)) score += 100;
+      if (SEARCH_RX.test(m)) score += 30;
+      if (r.top < (window.innerHeight * 0.45)) score += 15;
+      if (r.left < (window.innerWidth * 0.80)) score += 5;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = el;
+      }
+    }
+
+    return best;
+  }
+
+  function focusSearchInput() {
+    var input = findSearchInput();
+    if (!input) return false;
+
+    normalizeInput(input);
+
+    try { input.focus(); } catch (e1) {}
+    try { input.click(); } catch (e2) {}
+
+    setTimeout(function () {
+      try { input.focus(); } catch (e3) {}
+      try { input.click(); } catch (e4) {}
+    }, 80);
+
+    setTimeout(function () {
+      try { input.focus(); } catch (e5) {}
+      try { input.click(); } catch (e6) {}
+    }, 220);
+
+    return true;
+  }
+
+  function nodeLooksSearchControl(node) {
+    var cur = node;
+    var depth = 0;
+    while (cur && depth < 7) {
+      if (SEARCH_RX.test(meta(cur))) return true;
+      cur = cur.parentElement;
+      depth++;
+    }
+    return false;
+  }
+
+  function stopEvent(e) {
+    if (!e) return;
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }
+
+  document.addEventListener('keyboardStateChange', function (event) {
+    keyboardVisible = !!(event && event.detail && event.detail.visibility);
+  }, false);
+
+  document.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (isTextInput(t)) normalizeInput(t);
+  }, true);
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!isTextInput(t) && nodeLooksSearchControl(t)) {
+      setTimeout(function () {
+        focusSearchInput();
+      }, 0);
+    }
+  }, true);
+
+  document.addEventListener('keydown', function (e) {
+    var code = e.which || e.keyCode || 0;
+    var active = document.activeElement;
+
+    if (code === 13) {
+      if (looksSearchInput(active)) return;
+      if (nodeLooksSearchControl(active) || nodeLooksSearchControl(e.target)) {
+        if (focusSearchInput()) {
+          stopEvent(e);
+          return false;
+        }
+      }
+    }
+
+    if ((code === 37 || code === 38 || code === 39 || code === 40) && looksSearchInput(active) && keyboardVisible) {
+      stopEvent(e);
+      return false;
+    }
+  }, true);
+
+  function tick() {
+    var inputs = document.querySelectorAll('input, textarea');
+    for (var i = 0; i < inputs.length; i++) {
+      if (isVisible(inputs[i])) normalizeInput(inputs[i]);
+    }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+})();

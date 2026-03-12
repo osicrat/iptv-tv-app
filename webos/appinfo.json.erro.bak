@@ -1,0 +1,12 @@
+{
+  "id: com.etv.iptv,
+ title: ETV IPTV,
+ version: 1.0.0,
+ type: web,
+ main: index.html,
+ icon: icon.png,
+ largeIcon: icon.png,
+ vendor: ETV,
+ requiredMemory: 64,
+ disableBackHistoryAPI: true
+}

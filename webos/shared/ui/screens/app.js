@@ -1,0 +1,164 @@
+﻿import { renderLogin } from './login.js';
+import { createHomeScreen } from './home.js';
+import { storage } from '../../storage/storage.js';
+import { XtreamClient } from '../../api/xtream.js';
+import { bindRemote } from '../../utils/remote.js';
+import { loadXmltv, buildEpgIndex } from '../../epg/xmltv.js';
+import { DEFAULT_BASE_URL } from '../../utils/constants.js';
+
+export function bootstrap({ platform }) {
+  const root = document.getElementById('app');
+  const state = { activeTab: 'Live' };
+
+  async function login({ username, password, baseUrl }) {
+    const session = {
+      username,
+      password,
+      baseUrl: baseUrl || DEFAULT_BASE_URL,
+    };
+
+    const settings = storage.getSettings();
+    const client = new XtreamClient(session, settings);
+    const account = await client.validate();
+
+    storage.setSession({
+      ...session,
+      accountInfo: account.user_info || {},
+    });
+
+    startApp();
+  }
+
+  async function startApp() {
+    const session = storage.getSession();
+
+    if (!session?.username || !session?.password) {
+      renderLogin(root, login);
+      return;
+    }
+
+    const services = {
+      storage,
+      session,
+      client: new XtreamClient(session, storage.getSettings()),
+      epg: {
+        nowNext: () => ({}),
+        day: () => [],
+      },
+
+      async ensureEpg() {
+        const raw = await loadXmltv(this.client);
+        this.epg = buildEpgIndex(raw, state.liveStreams || []);
+      },
+
+      play(item, candidates, opts) {
+        storage.addRecent(
+          opts?.recent || {
+            id: item.stream_id || item.id,
+            type: opts.kind || (opts.isLive ? 'live' : 'vod'),
+            kind: opts.kind || (opts.isLive ? 'live' : 'vod'),
+            name: item.name || item.title,
+          }
+        );
+
+        if (!platform?.play) {
+          console.error('[APP] platform adapter indisponÃ­vel; nÃ£o foi possÃ­vel iniciar a reproduÃ§Ã£o');
+          return;
+        }
+
+        platform.play(candidates, {
+          maxReconnectAttempts: opts?.isLive ? 8 : 0,
+          ...opts,
+          item,
+          epg: this.epg.nowNext(item),
+        });
+      },
+
+      stopPlayback() {
+        if (platform?.stop) platform.stop();
+      },
+
+      getPlaybackState() {
+        return platform?.getPlaybackState
+          ? platform.getPlaybackState()
+          : { currentTime: 0, duration: 0, isLive: false, canSeek: false, paused: false };
+      },
+
+      seekBy(seconds) {
+        return platform?.seekBy ? platform.seekBy(seconds) : this.getPlaybackState();
+      },
+
+      togglePause() {
+        return platform?.togglePause ? platform.togglePause() : false;
+      },
+
+      async logout() {
+        try { platform?.stop?.(); } catch {}
+        storage.clearSession();
+        delete window.__homeScreen;
+        renderLogin(root, login);
+      },
+    };
+
+    const home = createHomeScreen({ root, state, services });
+    window.__homeScreen = home;
+
+    if (platform?.setCallbacks) {
+      platform.setCallbacks({
+        onEnded(meta) {
+          home.onPlaybackEnded?.(meta);
+        },
+        onPlayStarted(meta) {
+          home.onPlaybackStarted?.(meta);
+        },
+        onTryReconnect(meta) {
+          home.onPlaybackReconnect?.(meta);
+        },
+        onError(meta) {
+          home.onPlaybackError?.(meta);
+        },
+      });
+    }
+
+    document.addEventListener(
+      'keydown',
+      (ev) => {
+        if (ev.keyCode === 10009) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          home.onKey('Back');
+        }
+      },
+      true
+    );
+
+    bindRemote((key) => {
+      if (key === 'Back') return home.onKey('Back');
+      if (key === 'ChannelUp') return home.onKey('ChannelUp');
+      if (key === 'ChannelDown') return home.onKey('ChannelDown');
+      if (key === 'Info') return home.onKey('Info');
+      home.onKey(key);
+    }, platform);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) home.onAppHidden?.();
+      else home.onAppResume?.();
+    });
+
+    window.addEventListener('focus', () => {
+      home.onAppResume?.();
+    });
+
+    window.addEventListener('pageshow', () => {
+      home.onAppResume?.();
+    });
+
+    document.addEventListener('resume', () => {
+      home.onAppResume?.();
+    });
+  }
+
+  startApp();
+}
+
+

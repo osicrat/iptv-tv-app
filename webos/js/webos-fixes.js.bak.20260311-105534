@@ -1,0 +1,88 @@
+﻿(function () {
+  if (window.__ETV_WEBOS_HLS_BUFFER_FIX_V1__) return;
+  window.__ETV_WEBOS_HLS_BUFFER_FIX_V1__ = true;
+
+  function patchHls() {
+    if (!window.Hls || window.Hls.__etvPatchedForWebOSBuffer) return;
+
+    var OriginalHls = window.Hls;
+
+    function PatchedHls(userConfig) {
+      var defaults = {
+        enableWorker: false,
+        lowLatencyMode: false,
+
+        initialLiveManifestSize: 6,
+        liveSyncDurationCount: 6,
+        liveMaxLatencyDurationCount: 12,
+        liveSyncMode: 'buffered',
+
+        backBufferLength: 30,
+        maxBufferLength: 45,
+        maxMaxBufferLength: 90,
+
+        manifestLoadingMaxRetry: 8,
+        levelLoadingMaxRetry: 8,
+        fragLoadingMaxRetry: 8,
+
+        manifestLoadingRetryDelay: 1500,
+        levelLoadingRetryDelay: 1500,
+        fragLoadingRetryDelay: 1500,
+
+        appendErrorMaxRetry: 8
+      };
+
+      var merged = {};
+      var k;
+
+      for (k in defaults) merged[k] = defaults[k];
+      userConfig = userConfig || {};
+      for (k in userConfig) merged[k] = userConfig[k];
+
+      var hls = new OriginalHls(merged);
+      var lastRecoverAt = 0;
+
+      try {
+        hls.on(OriginalHls.Events.ERROR, function (evt, data) {
+          if (!data || !data.fatal) return;
+
+          var now = Date.now();
+          if ((now - lastRecoverAt) < 3000) return;
+          lastRecoverAt = now;
+
+          if (data.type === OriginalHls.ErrorTypes.NETWORK_ERROR) {
+            try { hls.startLoad(); } catch (e1) {}
+            return;
+          }
+
+          if (data.type === OriginalHls.ErrorTypes.MEDIA_ERROR) {
+            try { hls.recoverMediaError(); } catch (e2) {}
+            return;
+          }
+        });
+      } catch (e3) {}
+
+      return hls;
+    }
+
+    PatchedHls.prototype = OriginalHls.prototype;
+
+    try {
+      var names = Object.getOwnPropertyNames(OriginalHls);
+      for (var i = 0; i < names.length; i++) {
+        var name = names[i];
+        if (name === 'prototype' || name === 'length' || name === 'name') continue;
+        var desc = Object.getOwnPropertyDescriptor(OriginalHls, name);
+        if (desc) {
+          try { Object.defineProperty(PatchedHls, name, desc); } catch (e4) {}
+        }
+      }
+    } catch (e5) {}
+
+    PatchedHls.__etvPatchedForWebOSBuffer = true;
+    window.Hls = PatchedHls;
+  }
+
+  patchHls();
+  setInterval(patchHls, 1000);
+})();

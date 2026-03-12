@@ -1,0 +1,295 @@
+﻿(function () {
+  if (window.__ETV_WEBOS_FIXES_V3__) return;
+  window.__ETV_WEBOS_FIXES_V3__ = true;
+
+  var SEARCH_RX = /(pesquis|search|buscar)/i;
+  var keyboardVisible = false;
+
+  function toText(v) {
+    return v == null ? '' : String(v);
+  }
+
+  function attr(el, name) {
+    try {
+      return toText(el.getAttribute(name));
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function isVisible(el) {
+    if (!el) return false;
+    var s = window.getComputedStyle(el);
+    if (!s) return false;
+    if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return false;
+    if (el.offsetWidth <= 0 && el.offsetHeight <= 0 && s.position !== 'fixed') return false;
+    return true;
+  }
+
+  function isTextInput(el) {
+    if (!el || !el.tagName) return false;
+    var tag = el.tagName.toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
+    if (el.disabled || el.readOnly) return false;
+
+    var type = toText(el.type).toLowerCase();
+    if (type === 'hidden' || type === 'checkbox' || type === 'radio' || type === 'button' || type === 'submit') {
+      return false;
+    }
+    return true;
+  }
+
+  function elementInfo(el) {
+    if (!el) return '';
+    var parts = [];
+    parts.push(el.id || '');
+    parts.push(el.className || '');
+    parts.push(attr(el, 'name'));
+    parts.push(attr(el, 'type'));
+    parts.push(attr(el, 'placeholder'));
+    parts.push(attr(el, 'aria-label'));
+    parts.push(attr(el, 'title'));
+    try {
+      if (el.textContent && el.textContent.length < 80) parts.push(el.textContent);
+    } catch (e) {}
+    return parts.join(' ');
+  }
+
+  function isSearchInput(el) {
+    if (!isTextInput(el)) return false;
+    if (toText(el.type).toLowerCase() === 'search') return true;
+    return SEARCH_RX.test(elementInfo(el));
+  }
+
+  function findSearchInput() {
+    var nodes = document.querySelectorAll('input, textarea');
+    var fallback = null;
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (!isVisible(el) || !isTextInput(el)) continue;
+      if (!fallback) fallback = el;
+      if (isSearchInput(el)) return el;
+    }
+    return fallback;
+  }
+
+  function findNearbySearchActivator(el) {
+    var node = el;
+    var depth = 0;
+    while (node && depth < 6) {
+      if (SEARCH_RX.test(elementInfo(node))) return true;
+      node = node.parentElement;
+      depth++;
+    }
+    return false;
+  }
+
+  function stopEvent(e) {
+    if (!e) return;
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }
+
+  function focusSearchInput() {
+    var input = findSearchInput();
+    if (!input) return false;
+
+    try {
+      input.disabled = false;
+      try { input.readOnly = false; } catch (e0) {}
+      if (!input.hasAttribute('tabindex') || parseInt(input.getAttribute('tabindex'), 10) < 0) {
+        input.setAttribute('tabindex', '0');
+      }
+
+      input.style.pointerEvents = 'auto';
+      input.focus();
+
+      try { input.click(); } catch (e1) {}
+
+      try {
+        var len = toText(input.value).length;
+        if (input.setSelectionRange) input.setSelectionRange(len, len);
+      } catch (e2) {}
+
+      setTimeout(function () {
+        try {
+          input.focus();
+          input.click();
+        } catch (e3) {}
+      }, 80);
+
+      setTimeout(function () {
+        try {
+          input.focus();
+          input.click();
+        } catch (e4) {}
+      }, 240);
+
+      return document.activeElement === input;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  document.addEventListener('keyboardStateChange', function (e) {
+    keyboardVisible = !!(e && e.detail && e.detail.visibility);
+  }, false);
+
+  document.addEventListener('keydown', function (e) {
+    var code = e.which || e.keyCode || 0;
+    var active = document.activeElement;
+
+    if (code === 13) {
+      if (!isTextInput(active) && findNearbySearchActivator(active)) {
+        if (focusSearchInput()) {
+          stopEvent(e);
+          return false;
+        }
+      }
+    }
+
+    if ((code === 37 || code === 38 || code === 39 || code === 40) && isSearchInput(active) && !keyboardVisible) {
+      stopEvent(e);
+      return false;
+    }
+  }, true);
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t && !isTextInput(t) && findNearbySearchActivator(t)) {
+      setTimeout(function () {
+        focusSearchInput();
+      }, 0);
+    }
+  }, true);
+
+  function patchHls() {
+    if (!window.Hls || window.Hls.__etvWebOsPatched) return;
+
+    var OriginalHls = window.Hls;
+
+    function PatchedHls(userConfig) {
+      var defaults = {
+        enableWorker: false,
+        lowLatencyMode: false,
+        backBufferLength: 90,
+        maxBufferLength: 20,
+        maxMaxBufferLength: 30,
+        liveSyncDurationCount: 4,
+        liveMaxLatencyDurationCount: 10,
+        manifestLoadingMaxRetry: 6,
+        levelLoadingMaxRetry: 6,
+        fragLoadingMaxRetry: 6,
+        manifestLoadingRetryDelay: 1000,
+        levelLoadingRetryDelay: 1000,
+        fragLoadingRetryDelay: 1000,
+        appendErrorMaxRetry: 6
+      };
+
+      var merged = {};
+      var k;
+
+      for (k in defaults) merged[k] = defaults[k];
+      userConfig = userConfig || {};
+      for (k in userConfig) merged[k] = userConfig[k];
+
+      var hls = new OriginalHls(merged);
+
+      try {
+        hls.on(OriginalHls.Events.ERROR, function (evt, data) {
+          if (!data || !data.fatal) return;
+
+          if (data.type === OriginalHls.ErrorTypes.NETWORK_ERROR) {
+            try { hls.startLoad(); } catch (e1) {}
+          } else if (data.type === OriginalHls.ErrorTypes.MEDIA_ERROR) {
+            try { hls.recoverMediaError(); } catch (e2) {}
+          }
+        });
+      } catch (e) {}
+
+      return hls;
+    }
+
+    PatchedHls.prototype = OriginalHls.prototype;
+
+    try {
+      var names = Object.getOwnPropertyNames(OriginalHls);
+      for (var i = 0; i < names.length; i++) {
+        var name = names[i];
+        if (name === 'prototype' || name === 'name' || name === 'length') continue;
+        var desc = Object.getOwnPropertyDescriptor(OriginalHls, name);
+        if (desc) {
+          try { Object.defineProperty(PatchedHls, name, desc); } catch (e3) {}
+        }
+      }
+    } catch (e4) {}
+
+    PatchedHls.__etvWebOsPatched = true;
+    window.Hls = PatchedHls;
+  }
+
+  function armVideoStallGuard(video) {
+    if (!video || video.__etvStallGuard) return;
+    video.__etvStallGuard = true;
+
+    video.preload = 'auto';
+    video.setAttribute('playsinline', 'playsinline');
+    video.setAttribute('webkit-playsinline', 'webkit-playsinline');
+
+    var lastProgressTs = Date.now();
+    var stallTimer = null;
+
+    function clearStallTimer() {
+      if (stallTimer) {
+        clearTimeout(stallTimer);
+        stallTimer = null;
+      }
+    }
+
+    function markProgress() {
+      lastProgressTs = Date.now();
+      clearStallTimer();
+    }
+
+    function scheduleRecovery() {
+      clearStallTimer();
+      stallTimer = setTimeout(function () {
+        try {
+          if (video.paused || video.ended) return;
+          if ((Date.now() - lastProgressTs) < 10000) return;
+
+          video.load();
+
+          var p = video.play();
+          if (p && p.catch) {
+            p.catch(function () {});
+          }
+        } catch (e) {}
+      }, 12000);
+    }
+
+    video.addEventListener('playing', markProgress, false);
+    video.addEventListener('canplay', markProgress, false);
+    video.addEventListener('timeupdate', markProgress, false);
+    video.addEventListener('progress', markProgress, false);
+    video.addEventListener('loadeddata', markProgress, false);
+
+    video.addEventListener('waiting', scheduleRecovery, false);
+    video.addEventListener('stalled', scheduleRecovery, false);
+    video.addEventListener('suspend', scheduleRecovery, false);
+    video.addEventListener('error', scheduleRecovery, false);
+  }
+
+  function scan() {
+    patchHls();
+
+    var videos = document.querySelectorAll('video');
+    for (var i = 0; i < videos.length; i++) {
+      armVideoStallGuard(videos[i]);
+    }
+  }
+
+  scan();
+  setInterval(scan, 1000);
+})();
