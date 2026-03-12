@@ -246,11 +246,18 @@
       safe(function () { av().setBufferingParam('PLAYER_BUFFER_FOR_PLAY', 'PLAYER_BUFFER_SIZE_IN_SECOND', 6); });
       safe(function () { av().setBufferingParam('PLAYER_BUFFER_FOR_RESUME', 'PLAYER_BUFFER_SIZE_IN_SECOND', 8); });
 
-      safe(function () { av().open(currentUrl); });
+      try {
+        av().open(currentUrl);
+      } catch (errOpen) {
+        log('open fail', errOpen);
+        handleFailure('open fail: ' + errOpen);
+        return;
+      }
+
       setRect();
       safe(function () { av().setStreamingProperty('ADAPTIVE_INFO', 'FIXED_MAX_RESOLUTION=1920X1080'); });
 
-      safe(function () {
+      try {
         av().prepareAsync(
           function () {
             safe(function () { av().play(); });
@@ -269,7 +276,10 @@
             handleFailure('prepareAsync fail: ' + err);
           }
         );
-      });
+      } catch (errPrepare) {
+        log('prepareAsync throw', errPrepare);
+        handleFailure('prepareAsync throw: ' + errPrepare);
+      }
     }
 
     function play(candidates, opts) {
@@ -298,7 +308,7 @@
 
       resetTry(list);
 
-      if (hasAvplay() && !isDirectStream) {
+      if (hasAvplay()) {
         if (!tryList.length) return;
         openAndPlay(tryList[0]);
         return;
@@ -406,7 +416,6 @@
 
   log('platform-tizen loaded (non-module)');
 })();
-
 
 
 
