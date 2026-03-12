@@ -184,6 +184,12 @@
       });
 
       if (tryIdx < tryList.length) {
+        log('[DSDBG] handleFailure next candidate', {
+          reason: reason,
+          nextTryIdx: tryIdx,
+          nextUrl: tryList[tryIdx],
+          tryListLength: tryList.length,
+        });
         openAndPlay(tryList[tryIdx]);
         return;
       }
