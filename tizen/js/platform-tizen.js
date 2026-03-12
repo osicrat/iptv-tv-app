@@ -165,9 +165,23 @@
     }
 
     function handleFailure(reason) {
+      var beforeIdx = tryIdx;
+      var nextUrl = (beforeIdx + 1 < tryList.length) ? tryList[beforeIdx + 1] : '';
+      log('[DSDBG] handleFailure start', {
+        reason: reason,
+        tryIdxBefore: beforeIdx,
+        tryListLength: tryList.length,
+        nextUrl: nextUrl || null,
+      });
       log('failure:', reason, 'candidate', tryIdx + 1, '/', tryList.length);
       hardStopAvplay();
       tryIdx += 1;
+      log('[DSDBG] handleFailure after increment', {
+        reason: reason,
+        tryIdxAfter: tryIdx,
+        willTryNext: tryIdx < tryList.length,
+        nextUrl: (tryIdx < tryList.length) ? tryList[tryIdx] : null,
+      });
 
       if (tryIdx < tryList.length) {
         openAndPlay(tryList[tryIdx]);
@@ -219,6 +233,12 @@
           onbufferingstart: function () { log('buffer start'); },
           onbufferingcomplete: function () { log('buffer complete'); },
           onstreamcompleted: function () {
+            log('[DSDBG] onstreamcompleted', {
+              currentUrl: currentUrl,
+              isLive: !!(currentOpts && currentOpts.isLive),
+              tryIdx: tryIdx,
+              tryListLength: tryList.length,
+            });
             log('stream completed');
             if (currentOpts && currentOpts.isLive) {
               handleFailure('stream completed');
@@ -227,6 +247,12 @@
             emit('onEnded', currentMeta || {});
           },
           onerror: function (e) {
+            log('[DSDBG] onerror', {
+              error: e,
+              currentUrl: currentUrl,
+              tryIdx: tryIdx,
+              tryListLength: tryList.length,
+            });
             log('avplay error', e);
             handleFailure('avplay error: ' + e);
           },
@@ -239,6 +265,15 @@
       currentUrl = String(url || '');
       if (!currentUrl) return;
 
+      var urlNoQuery = currentUrl.split('?')[0];
+      var mExt = /\.([a-z0-9]+)$/i.exec(urlNoQuery);
+      log('[DSDBG] openAndPlay start', {
+        url: currentUrl,
+        tryIdx: tryIdx,
+        tryListLength: tryList.length,
+        hasLivePath: currentUrl.indexOf('/live/') !== -1,
+        extension: mExt ? mExt[1].toLowerCase() : null,
+      });
       log('open', currentUrl);
       hardStopAvplay();
       setListener();
@@ -246,14 +281,29 @@
       safe(function () { av().setBufferingParam('PLAYER_BUFFER_FOR_PLAY', 'PLAYER_BUFFER_SIZE_IN_SECOND', 6); });
       safe(function () { av().setBufferingParam('PLAYER_BUFFER_FOR_RESUME', 'PLAYER_BUFFER_SIZE_IN_SECOND', 8); });
 
-      safe(function () { av().open(currentUrl); });
+      try {
+        av().open(currentUrl);
+      } catch (errOpen) {
+        log('[DSDBG] open fail', {
+          error: errOpen,
+          url: currentUrl,
+          tryIdx: tryIdx,
+          tryListLength: tryList.length,
+        });
+        log('open fail', errOpen);
+        handleFailure('open fail: ' + errOpen);
+        return;
+      }
+
       setRect();
       safe(function () { av().setStreamingProperty('ADAPTIVE_INFO', 'FIXED_MAX_RESOLUTION=1920X1080'); });
 
-      safe(function () {
+      try {
         av().prepareAsync(
           function () {
+            log('[DSDBG] prepareAsync success', { url: currentUrl, tryIdx: tryIdx, tryListLength: tryList.length });
             safe(function () { av().play(); });
+            log('[DSDBG] avplay play() called', { url: currentUrl, tryIdx: tryIdx });
             setAvplayActive(true);
             reconnectAttempts = 0;
             startStallWatch();
@@ -262,14 +312,30 @@
               url: currentUrl,
               isLive: !!(currentOpts && currentOpts.isLive),
             });
+            log('[DSDBG] play ok', { url: currentUrl, tryIdx: tryIdx, tryListLength: tryList.length });
             log('play ok');
           },
           function (err) {
+            log('[DSDBG] prepareAsync fail', {
+              error: err,
+              url: currentUrl,
+              tryIdx: tryIdx,
+              tryListLength: tryList.length,
+            });
             log('prepareAsync fail', err);
             handleFailure('prepareAsync fail: ' + err);
           }
         );
-      });
+      } catch (errPrepare) {
+        log('[DSDBG] prepareAsync throw', {
+          error: errPrepare,
+          url: currentUrl,
+          tryIdx: tryIdx,
+          tryListLength: tryList.length,
+        });
+        log('prepareAsync throw', errPrepare);
+        handleFailure('prepareAsync throw: ' + errPrepare);
+      }
     }
 
     function play(candidates, opts) {
@@ -280,6 +346,16 @@
 
       var list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
       var isDirectStream = !!(currentMeta && (currentMeta.stream_source || currentMeta.streamSource));
+
+      log('[DSDBG] play start', {
+        isDirectStream: isDirectStream,
+        candidatesReceived: list.length,
+        stream_source: currentMeta && currentMeta.stream_source,
+        streamSource: currentMeta && currentMeta.streamSource,
+        stream_id: currentMeta && currentMeta.stream_id,
+        name: currentMeta && currentMeta.name,
+        container_extension: currentMeta && currentMeta.container_extension,
+      });
 
       if (isDirectStream && list.length) {
         var directFirst = [];
@@ -296,9 +372,11 @@
         list = directFirst.concat(rest);
       }
 
+      log('[DSDBG] before resetTry', { listLength: list.length, tryListLength: tryList.length, tryIdx: tryIdx, finalList: list });
       resetTry(list);
+      log('[DSDBG] after resetTry', { listLength: list.length, tryListLength: tryList.length, tryIdx: tryIdx });
 
-      if (hasAvplay() && !isDirectStream) {
+      if (hasAvplay()) {
         if (!tryList.length) return;
         openAndPlay(tryList[0]);
         return;
@@ -406,7 +484,6 @@
 
   log('platform-tizen loaded (non-module)');
 })();
-
 
 
 
