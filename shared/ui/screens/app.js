@@ -1,4 +1,4 @@
-import { renderLogin } from './login.js';
+﻿import { renderLogin } from './login.js';
 import { createHomeScreen } from './home.js';
 import { storage } from '../../storage/storage.js';
 import { XtreamClient } from '../../api/xtream.js';
