@@ -3,13 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=1920,height=1080,initial-scale=1" />
-  <title>IPTV Tizen</title>
-  <link rel="stylesheet" href="../shared/styles.css" />
+  <title>ETV</title>
+  <link rel="icon" type="image/png" href="./assets/appicon.png" />
+  <link rel="stylesheet" href="./shared/styles.css" />
 </head>
 <body>
-  <video id="video" style="position:fixed;inset:0;width:100%;height:100%;background:#000;z-index:-1" controls></video>
+  <div id="playerHost">
+    <video id="video" playsinline preload="none"></video>
+  </div>
+
   <div id="app"></div>
+
+  <!-- LOG de boot: isso ajuda MUITO a achar erro -->
+  <script>
+    console.log("[BOOT] index.html carregou:", location.href);
+    window.onerror = function (msg, url, line, col, err) {
+      console.log("[ONERROR]", msg, url, line + ":" + col, err && (err.stack || err));
+    };
+    window.onunhandledrejection = function (e) {
+      console.log("[UNHANDLED]", e && (e.reason && (e.reason.stack || e.reason) || e));
+    };
+  </script>
+
+  <!-- Bridge Tizen (normal, sem module) -->
   <script src="./js/platform-tizen.js"></script>
-  <script type="module" src="../shared/main.js"></script>
+
+  <!-- APP (ES MODULE) -->
+  <script type="module" src="./shared/main.js"></script>
 </body>
 </html>

@@ -1,7 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" id="com.supertv.iptv" version="1.0.0" viewmodes="maximized">
-  <tizen:application id="com.supertv.iptv" package="com.supertv" required_version="5.5" xmlns:tizen="http://tizen.org/ns/widgets"/>
-  <content src="index.html"/>
-  <name>SuperTV IPTV</name>
-  <tizen:privilege name="http://tizen.org/privilege/internet" xmlns:tizen="http://tizen.org/ns/widgets"/>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://etv.local/iptv000001.player"
+        version="1.0.0"
+        viewmodes="maximized">
+
+    <tizen:application id="iptv000001.player"
+                       package="iptv000001"
+                       required_version="5.5"/>
+
+    <tizen:profile name="tv"/>
+
+    <content src="index.html"/>
+    <icon src="assets/appicon.png"/>
+    <name>ETV</name>
+
+    <!-- ✅ ESSENCIAL: permitir chamadas de rede para o seu servidor -->
+    <access origin="https://supertvcine.com.br" subdomains="true"/>
+    <!-- ✅ opcional (recomendado para evitar outras travas futuras) -->
+    <access origin="*" subdomains="true"/>
+
+    <!-- Internet -->
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+
+    <!-- (opcional) recursos de tela -->
+    <feature name="http://tizen.org/feature/screen.size.all"/>
 </widget>
