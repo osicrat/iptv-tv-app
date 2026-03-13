@@ -89,6 +89,11 @@ function dedupeUrls(list) {
   return out;
 }
 
+
+function cdbg(label, payload) {
+  try { console.log('[CDBG]', label, payload); } catch {}
+}
+
 function parsePossibleJsonArray(value) {
   if (Array.isArray(value)) return value;
   if (typeof value !== 'string') return [];
@@ -108,6 +113,20 @@ function parsePossibleJsonArray(value) {
 function extractDirectSources(item) {
   if (!item || typeof item !== 'object') return [];
 
+  const sourceUrlFields = {};
+  Object.keys(item).forEach((k) => {
+    if (/(source|url)/i.test(k)) sourceUrlFields[k] = item[k];
+  });
+  cdbg('extractDirectSources:start', {
+    id: item.id || item.stream_id,
+    stream_id: item.stream_id,
+    name: item.name,
+    stream_source: item.stream_source,
+    direct_source: item.direct_source,
+    stream_url: item.stream_url,
+    sourceUrlFields,
+  });
+
   const sources = [];
 
   const directSource = item.direct_source || item.directSource || '';
@@ -122,7 +141,9 @@ function extractDirectSources(item) {
     else if (/^https?:\/\//i.test(streamSource.trim())) sources.push(streamSource.trim());
   }
 
-  return dedupeUrls(sources);
+  const directSources = dedupeUrls(sources);
+  cdbg('extractDirectSources:end', { directSources });
+  return directSources;
 }
 
 export class XtreamClient {
@@ -217,6 +238,15 @@ export class XtreamClient {
     const id = item ? (item.stream_id || item.id || item.series_id) : itemOrId;
 
     const directSources = extractDirectSources(item);
+    cdbg('buildStreamCandidates:start', {
+      type,
+      stream_id: item && (item.stream_id || item.id || item.series_id),
+      name: item && item.name,
+      username: this.username,
+      container_extension: item && item.container_extension,
+      stream_source: item && (item.stream_source || item.streamSource),
+      directSources,
+    });
 
     if (type === 'live') {
       const proxied =
@@ -225,25 +255,33 @@ export class XtreamClient {
           : [`${base}/live/${u}/${p}/${id}.ts`, `${base}/live/${u}/${p}/${id}.m3u8`];
 
       // ✅ CRÍTICO PARA TIZEN: tenta proxied primeiro (m3u8/ts), depois direct
-      return dedupeUrls([...proxied, ...directSources]);
+      const candidates = dedupeUrls([...proxied, ...directSources]);
+      cdbg('buildStreamCandidates:end', { path: 'live', count: candidates.length, candidates });
+      return candidates;
     }
 
     if (type === 'vod') {
-      return dedupeUrls([
+      const candidates = dedupeUrls([
         ...directSources,
         `${base}/movie/${u}/${p}/${id}.${cleanExt}`,
         `${base}/movie/${u}/${p}/${id}.m3u8`,
       ]);
+      cdbg('buildStreamCandidates:end', { path: 'vod', count: candidates.length, candidates });
+      return candidates;
     }
 
     if (type === 'series') {
-      return dedupeUrls([
+      const candidates = dedupeUrls([
         ...directSources,
         `${base}/series/${u}/${p}/${id}.${cleanExt}`,
         `${base}/series/${u}/${p}/${id}.m3u8`,
       ]);
+      cdbg('buildStreamCandidates:end', { path: 'series', count: candidates.length, candidates });
+      return candidates;
     }
 
-    return dedupeUrls(directSources);
+    const candidates = dedupeUrls(directSources);
+    cdbg('buildStreamCandidates:end', { path: 'other', count: candidates.length, candidates });
+    return candidates;
   }
 }
