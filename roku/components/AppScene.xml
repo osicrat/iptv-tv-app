@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="AppScene" extends="Scene">
+    <interface>
+        <field id="activeScreen" type="string" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/AppScene.brs" />
+    <script type="text/brightscript" uri="pkg:/components/services/XtreamApi.brs" />
+    <script type="text/brightscript" uri="pkg:/components/services/Storage.brs" />
+    <children>
+        <Rectangle id="background" width="1280" height="720" color="0x111111FF" />
+        <LoginScreen id="loginScreen" visible="false" />
+        <HomeScreen id="homeScreen" visible="false" />
+        <LiveScreen id="liveScreen" visible="false" />
+        <PlayerScreen id="playerScreen" visible="false" />
+    </children>
+</component>

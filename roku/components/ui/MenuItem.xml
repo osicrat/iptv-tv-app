@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MenuItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onItemContentChanged" />
+        <field id="focusPercent" type="float" onChange="onFocusPercentChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ui/MenuItem.brs" />
+    <children>
+        <Rectangle id="bg" width="300" height="56" color="0x242424FF" />
+        <Label id="title" translation="[20,16]" color="0xFFFFFFFF" />
+    </children>
+</component>
