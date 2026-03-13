@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="HomeScreen" extends="Group">
+    <interface>
+        <field id="menuSelected" type="string" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/screens/HomeScreen.brs" />
+    <children>
+        <Rectangle width="1280" height="720" color="0x111111FF" />
+        <Label id="title" translation="[80,60]" text="AppTVs" color="0xFFFFFFFF" font="font:LargeBoldSystemFont" />
+        <Label id="welcome" translation="[80,110]" text="" color="0xAAAAAAFF" />
+        <MenuBar id="menuBar" translation="[80,180]" />
+        <Label translation="[80,280]" text="Selecione Live TV para abrir os canais" color="0xFFFFFFFF" />
+    </children>
+</component>

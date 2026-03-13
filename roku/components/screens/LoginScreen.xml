@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LoginScreen" extends="Group">
+    <interface>
+        <field id="submitRequested" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/screens/LoginScreen.brs" />
+    <children>
+        <Rectangle width="1280" height="720" color="0x111111FF" />
+        <Label id="title" translation="[80,60]" text="AppTVs - Login" color="0xFFFFFFFF" font="font:LargeBoldSystemFont" />
+        <Label id="hint" translation="[80,110]" text="Use OK para editar. Setas para navegar." color="0xA0A0A0FF" font="font:SmallSystemFont" />
+
+        <Label id="serverLabel" translation="[80,190]" text="Servidor" color="0xBDBDBDFF" />
+        <Label id="serverValue" translation="[80,225]" text="" color="0xFFFFFFFF" />
+
+        <Label id="userLabel" translation="[80,285]" text="Usuário" color="0xBDBDBDFF" />
+        <Label id="userValue" translation="[80,320]" text="" color="0xFFFFFFFF" />
+
+        <Label id="passLabel" translation="[80,380]" text="Senha" color="0xBDBDBDFF" />
+        <Label id="passValue" translation="[80,415]" text="" color="0xFFFFFFFF" />
+
+        <Rectangle id="focusRect" translation="[70,215]" width="760" height="42" color="0x2A2A2AFF" />
+
+        <Label id="submitButton" translation="[80,500]" text="Entrar" color="0xFFFFFFFF" font="font:MediumBoldSystemFont" />
+        <Label id="status" translation="[80,560]" text="" color="0xFF6767FF" />
+    </children>
+</component>

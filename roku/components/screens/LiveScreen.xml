@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LiveScreen" extends="Group">
+    <interface>
+        <field id="channelSelected" type="assocarray" alwaysNotify="true" />
+        <field id="backRequested" type="boolean" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/screens/LiveScreen.brs" />
+    <children>
+        <Rectangle width="1280" height="720" color="0x111111FF" />
+        <Label translation="[80,50]" text="Live TV" color="0xFFFFFFFF" font="font:LargeBoldSystemFont" />
+        <Label translation="[80,95]" text="Esquerda: categorias | Direita: canais | Back: Home" color="0x9E9E9EFF" font="font:SmallSystemFont" />
+
+        <ChannelList id="categoryList" translation="[80,150]" width="420" height="520" />
+        <ChannelList id="channelList" translation="[540,150]" width="660" height="520" />
+    </children>
+</component>

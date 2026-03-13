@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MenuBar" extends="Group">
+    <interface>
+        <field id="itemSelected" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ui/MenuBar.brs" />
+    <children>
+        <MarkupList id="list" itemComponentName="MenuItem" itemSize="[320,64]" itemSpacing="[16,0]" numRows="1" vertFocusAnimationStyle="fixedFocus" drawFocusFeedback="false" />
+    </children>
+</component>
