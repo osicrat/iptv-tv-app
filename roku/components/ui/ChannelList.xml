@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ChannelList" extends="Group">
+    <interface>
+        <field id="itemSelected" type="assocarray" alwaysNotify="true" />
+        <field id="listWidth" type="integer" value="420" />
+        <field id="listHeight" type="integer" value="520" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ui/ChannelList.brs" />
+    <children>
+        <Rectangle id="frame" width="420" height="520" color="0x1B1B1BFF" />
+        <LabelList id="list" translation="[12,12]" drawFocusFeedback="false" vertFocusAnimationStyle="fixedFocus" />
+    </children>
+</component>

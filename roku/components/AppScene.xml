@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="AppScene" extends="Scene">
+    <interface>
+        <field id="activeScreen" type="string" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/AppScene.brs" />
+    <script type="text/brightscript" uri="pkg:/components/services/XtreamApi.brs" />
+    <script type="text/brightscript" uri="pkg:/components/services/Storage.brs" />
+    <script type="text/brightscript" uri="pkg:/components/services/SessionConfig.brs" />
+    <children>
+        <Rectangle width="1280" height="720" color="0x030814FF" />
+        <HomeScreen id="homeScreen" visible="false" />
+        <PlayerScreen id="playerScreen" visible="false" />
+        <Label id="statusLabel" translation="[80,330]" width="1120" text="Inicializando AppTVs..." color="0xEEF4FFFF" horizAlign="center" vertAlign="center" visible="false" />
+    </children>
+</component>

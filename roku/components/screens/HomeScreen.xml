@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="HomeScreen" extends="Group">
+    <interface>
+        <field id="channelSelected" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/screens/HomeScreen.brs" />
+    <children>
+        <Rectangle width="1280" height="720" color="0x030814FF" />
+
+        <Rectangle translation="[0,0]" width="1280" height="96" color="0x081430EE" />
+        <Label id="screenTitle" translation="[28,24]" text="Canais ao vivo" color="0xEEF4FFFF" font="font:LargeBoldSystemFont" />
+        <Label id="screenSubTitle" translation="[30,60]" text="Categorias e canais" color="0x9EB6D8FF" font="font:SmallSystemFont" />
+
+        <Rectangle translation="[20,112]" width="420" height="582" color="0x081430EE" />
+        <Rectangle translation="[458,112]" width="802" height="582" color="0x081430EE" />
+
+        <Label id="leftPaneTitle" translation="[36,134]" text="Categorias" color="0xE7F0FFFF" />
+        <Label id="rightPaneTitle" translation="[474,134]" text="Canais ao vivo" color="0xE7F0FFFF" />
+
+        <ChannelList id="categoryList" translation="[30,166]" listWidth="400" listHeight="522" />
+        <ChannelList id="contentList" translation="[468,166]" listWidth="782" listHeight="522" />
+
+        <Label id="footerHint" translation="[30,700]" text="←/→ alterna listas  •  OK reproduz  •  CH+/CH- navega" color="0x9EB6D8FF" font="font:SmallSystemFont" />
+    </children>
+</component>
